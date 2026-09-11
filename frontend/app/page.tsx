@@ -9,7 +9,7 @@ interface Reading {
   timestamp: number;
 }
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = 'https://cleantrace.onrender.com';
 const ALERT_THRESHOLD = 150;
 
 export default function Home() {
