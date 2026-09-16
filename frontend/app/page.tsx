@@ -1,6 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import ChatWidget from './components/ChatWidget';
 
 interface Reading {
   location: string;
@@ -86,9 +88,12 @@ export default function Home() {
         <div className="flex justify-between items-start mb-2">
           <div>
             <h1 className={`text-3xl font-bold ${titleColor}`}>CleanTrace</h1>
-            <p className={`${textSecondary} mb-8`}>
+            <p className={`${textSecondary} mb-2`}>
               On-chain verified pollution monitoring for Ghana
             </p>
+            <Link href="/guide" className="text-sm text-green-600 hover:underline">
+              How does this work?
+            </Link>
           </div>
           <button
             onClick={() => setDarkMode(!darkMode)}
@@ -96,7 +101,6 @@ export default function Home() {
             className={`p-2 rounded-full border ${border} ${cardBg} hover:opacity-80 transition-opacity`}
           >
             {darkMode ? (
-              // Sun icon
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-5 h-5 text-yellow-400"
@@ -112,7 +116,6 @@ export default function Home() {
                 />
               </svg>
             ) : (
-              // Moon icon
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-5 h-5 text-gray-600"
@@ -131,7 +134,7 @@ export default function Home() {
           </button>
         </div>
 
-        <div className={`${cardBg} rounded-lg shadow p-6 mb-8 border ${border}`}>
+        <div className={`${cardBg} rounded-lg shadow p-6 mb-8 mt-6 border ${border}`}>
           <h2 className={`text-lg font-semibold mb-4 ${textPrimary}`}>
             Submit a Reading
           </h2>
@@ -202,7 +205,7 @@ export default function Home() {
                         }
                       >
                         {r.pm25}
-                        {r.pm25 > ALERT_THRESHOLD && ' ⚠️'}
+                        {r.pm25 > ALERT_THRESHOLD && ' \u26a0\ufe0f'}
                       </span>
                     </td>
                     <td className={`py-2 text-sm ${textMuted}`}>{r.source}</td>
@@ -220,6 +223,8 @@ export default function Home() {
           Data attested on-chain via Soroban smart contract on Stellar testnet
         </p>
       </div>
+
+      <ChatWidget />
     </main>
   );
 }
