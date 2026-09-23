@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   Keypair,
@@ -15,9 +15,11 @@ import axios from 'axios';
 const RPC_URL = 'https://soroban-testnet.stellar.org';
 const NETWORK_PASSPHRASE = Networks.TESTNET;
 
-// Maps a friendly city key to a known OpenAQ v3 PM2.5 sensor ID
 const CITY_SENSOR_MAP: Record<string, number> = {
-  accra: 10330993, // Kwame Nkrumah Circle, Accra (Breathe Accra / Clarity)
+  accra: 10330993,
+  kumasi: 15461153,
+  takoradi: 15461150,
+  tamale: 15461151,
 };
 
 function convertBigInts(obj: any): any {
