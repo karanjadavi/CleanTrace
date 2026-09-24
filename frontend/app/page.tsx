@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import ChatWidget from './components/ChatWidget';
+import PollutionChart from './components/PollutionChart';
+
+const PollutionMap = dynamic(() => import('./components/PollutionMap'), {
+  ssr: false,
+  loading: () => <p className="text-gray-400 text-sm">Loading map...</p>,
+});
 
 interface Reading {
   location: string;
@@ -163,6 +170,20 @@ export default function Home() {
               {submitting ? 'Submitting...' : 'Submit'}
             </button>
           </form>
+        </div>
+
+        <div className={`${cardBg} rounded-lg shadow p-6 mb-8 border ${border}`}>
+          <h2 className={`text-lg font-semibold mb-4 ${textPrimary}`}>
+            Pollution Map
+          </h2>
+          <PollutionMap readings={readings} />
+        </div>
+
+        <div className={`${cardBg} rounded-lg shadow p-6 mb-8 border ${border}`}>
+          <h2 className={`text-lg font-semibold mb-4 ${textPrimary}`}>
+            PM2.5 Trend
+          </h2>
+          <PollutionChart readings={readings} darkMode={darkMode} />
         </div>
 
         <div className={`${cardBg} rounded-lg shadow p-6 border ${border}`}>
