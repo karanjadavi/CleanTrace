@@ -52,6 +52,8 @@ export default function Home() {
 
   useEffect(() => {
     fetchReadings();
+    const interval = setInterval(fetchReadings, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -249,3 +251,4 @@ export default function Home() {
     </main>
   );
 }
+
