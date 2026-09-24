@@ -1,5 +1,6 @@
-﻿import { Injectable } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   Keypair,
   Contract,
@@ -37,6 +38,7 @@ function convertBigInts(obj: any): any {
 
 @Injectable()
 export class PollutionService {
+  private readonly logger = new Logger(PollutionService.name);
   private server = new rpc.Server(RPC_URL);
   private contract: Contract;
   private deployerSecret: string;
@@ -132,5 +134,18 @@ export class PollutionService {
     const pm25Value = results[0].value;
     await this.submitReading(city, Math.round(pm25Value), 'OpenAQ');
     return { city, pm25: pm25Value, submitted: true };
+  }
+
+  @Cron(CronExpression.EVERY_30_MINUTES)
+  async scheduledIngest() {
+    this.logger.log('Running scheduled OpenAQ ingest for all cities...');
+    for (const city of Object.keys(CITY_SENSOR_MAP)) {
+      try {
+        const result = await this.ingestFromOpenAQ(city);
+        this.logger.log(`Ingested ${city}: ${JSON.stringify(result)}`);
+      } catch (err: any) {
+        this.logger.error(`Failed to ingest ${city}: ${err.message}`);
+      }
+    }
   }
 }
