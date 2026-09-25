@@ -20,6 +20,7 @@ interface Reading {
 
 const API_BASE = 'https://cleantrace.onrender.com';
 const ALERT_THRESHOLD = 150;
+const DEFAULT_VISIBLE_ROWS = 5;
 
 export default function Home() {
   const [readings, setReadings] = useState<Reading[]>([]);
@@ -28,6 +29,7 @@ export default function Home() {
   const [pm25, setPm25] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('cleantrace-theme');
@@ -90,6 +92,8 @@ export default function Home() {
     ? 'bg-gray-800 border-gray-700 text-gray-100'
     : 'bg-white border-gray-300 text-gray-900';
   const titleColor = darkMode ? 'text-green-400' : 'text-green-800';
+
+  const visibleReadings = showAll ? readings : readings.slice(0, DEFAULT_VISIBLE_ROWS);
 
   return (
     <main className={`min-h-screen ${bg} p-8 transition-colors duration-300`}>
@@ -206,39 +210,49 @@ export default function Home() {
           ) : readings.length === 0 ? (
             <p className={textMuted}>No readings yet.</p>
           ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr className={`border-b ${border} text-sm ${textMuted}`}>
-                  <th className="pb-2">Location</th>
-                  <th className="pb-2">PM2.5</th>
-                  <th className="pb-2">Source</th>
-                  <th className="pb-2">Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {readings.map((r, i) => (
-                  <tr key={i} className={`border-b ${border} last:border-0`}>
-                    <td className={`py-2 ${textPrimary}`}>{r.location}</td>
-                    <td className="py-2">
-                      <span
-                        className={
-                          r.pm25 > ALERT_THRESHOLD
-                            ? 'text-red-500 font-semibold'
-                            : textPrimary
-                        }
-                      >
-                        {r.pm25}
-                        {r.pm25 > ALERT_THRESHOLD && ' \u26a0\ufe0f'}
-                      </span>
-                    </td>
-                    <td className={`py-2 text-sm ${textMuted}`}>{r.source}</td>
-                    <td className={`py-2 text-sm ${textMuted}`}>
-                      {new Date(r.timestamp * 1000).toLocaleString()}
-                    </td>
+            <>
+              <table className="w-full text-left">
+                <thead>
+                  <tr className={`border-b ${border} text-sm ${textMuted}`}>
+                    <th className="pb-2">Location</th>
+                    <th className="pb-2">PM2.5</th>
+                    <th className="pb-2">Source</th>
+                    <th className="pb-2">Time</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {visibleReadings.map((r, i) => (
+                    <tr key={i} className={`border-b ${border} last:border-0`}>
+                      <td className={`py-2 ${textPrimary}`}>{r.location}</td>
+                      <td className="py-2">
+                        <span
+                          className={
+                            r.pm25 > ALERT_THRESHOLD
+                              ? 'text-red-500 font-semibold'
+                              : textPrimary
+                          }
+                        >
+                          {r.pm25}
+                          {r.pm25 > ALERT_THRESHOLD && ' \u26a0\ufe0f'}
+                        </span>
+                      </td>
+                      <td className={`py-2 text-sm ${textMuted}`}>{r.source}</td>
+                      <td className={`py-2 text-sm ${textMuted}`}>
+                        {new Date(r.timestamp * 1000).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {readings.length > DEFAULT_VISIBLE_ROWS && (
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="mt-4 text-sm text-green-600 hover:underline"
+                >
+                  {showAll ? 'Show less' : `Show all ${readings.length} readings`}
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -251,4 +265,3 @@ export default function Home() {
     </main>
   );
 }
-
