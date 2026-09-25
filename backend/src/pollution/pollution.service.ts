@@ -23,6 +23,10 @@ const CITY_SENSOR_MAP: Record<string, number> = {
   tamale: 15461151,
 };
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function convertBigInts(obj: any): any {
   if (typeof obj === 'bigint') return Number(obj);
   if (Array.isArray(obj)) return obj.map(convertBigInts);
@@ -123,6 +127,7 @@ export class PollutionService {
       {
         params: { limit: 1 },
         headers: { 'X-API-Key': this.openaqApiKey },
+        timeout: 15000,
       },
     );
 
@@ -146,6 +151,7 @@ export class PollutionService {
       } catch (err: any) {
         this.logger.error(`Failed to ingest ${city}: ${err.message}`);
       }
+      await sleep(3000);
     }
   }
 }
