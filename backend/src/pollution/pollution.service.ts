@@ -141,7 +141,7 @@ export class PollutionService {
     return { city, pm25: pm25Value, submitted: true };
   }
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async scheduledIngest() {
     this.logger.log('Running scheduled OpenAQ ingest for all cities...');
     for (const city of Object.keys(CITY_SENSOR_MAP)) {
@@ -155,3 +155,4 @@ export class PollutionService {
     }
   }
 }
+
