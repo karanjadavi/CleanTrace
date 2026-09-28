@@ -19,6 +19,23 @@
     showAll: (n: number) => `Show all ${n} readings`,
     showLess: 'Show less',
     footer: 'Data attested on-chain via Soroban smart contract on Stellar testnet',
+    statCities: 'Cities with live sensors',
+    statAverage: 'Latest average PM2.5',
+    statTotal: 'Readings on-chain',
+    statLastReading: 'Last reading',
+    statusGood: 'Good',
+    statusModerate: 'Moderate',
+    statusUnhealthy: 'Unhealthy',
+    statusHazardous: 'Hazardous',
+    status: 'Status',
+    legendTitle: 'Air quality scale (PM2.5, \u00b5g/m\u00b3)',
+    legendNote: 'Simplified bands for quick reading, not a medical guideline.',
+    navGuide: 'Guide',
+    navContract: 'Contract',
+    liveBadge: 'Live on Stellar testnet',
+    footerBuilt: 'Built for the Tech Hub Africa Hackathon 2026',
+    dataCredit: 'Air quality data from OpenAQ. Map \u00a9 OpenStreetMap contributors.',
+    noData: 'No data yet',
   },
   tw: {
     name: 'Twi',
@@ -107,3 +124,4 @@
 };
 
 export type Lang = keyof typeof translations;
+
