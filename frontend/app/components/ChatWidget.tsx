@@ -7,6 +7,12 @@ interface Message {
   text: string;
 }
 
+interface ChatSession {
+  id: string;
+  startedAt: number;
+  messages: Message[];
+}
+
 interface Topic {
   keywords: string[];
   answer: string;
@@ -23,6 +29,9 @@ interface CompiledTopic {
 }
 
 const CONTRACT_ID = 'CBCJXJQQZN474BFXRWNCIDJI3EG7TW2QOKQ66F6X5QTQZHCKICIVRDGJ';
+const STORAGE_CURRENT = 'cleantrace-chat-current';
+const STORAGE_SESSIONS = 'cleantrace-chat-sessions';
+const MAX_SESSIONS = 20;
 
 const WELCOME =
   "Hi! I'm the CleanTrace helper. Ask me how the app works, what the numbers and colors mean, or anything about air pollution and the environment. Tap a suggestion to start.";
@@ -446,19 +455,61 @@ function getAnswer(question: string): string {
   return DEFAULT_ANSWER;
 }
 
+function loadJSON<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveJSON(key: string, value: unknown) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // storage unavailable, ignore
+  }
+}
+
+function formatSessionTime(ts: number): string {
+  return new Date(ts).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function sessionPreview(session: ChatSession): string {
+  const firstUser = session.messages.find((m) => m.role === 'user');
+  return firstUser ? firstUser.text : 'New conversation';
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([{ role: 'bot', text: WELCOME }]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const savedMessages = loadJSON<Message[]>(STORAGE_CURRENT, []);
+    if (savedMessages.length > 0) setMessages(savedMessages);
+    setSessions(loadJSON<ChatSession[]>(STORAGE_SESSIONS, []));
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated && viewingId === null) saveJSON(STORAGE_CURRENT, messages);
+  }, [messages, hydrated, viewingId]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, open]);
+  }, [messages, open, viewingId]);
 
   const ask = (question: string) => {
     const q = question.trim();
-    if (!q) return;
+    if (!q || viewingId !== null) return;
     setMessages((prev) => [
       ...prev,
       { role: 'user', text: q },
@@ -472,23 +523,115 @@ export default function ChatWidget() {
     ask(input);
   };
 
+  const startNewChat = () => {
+    const hasRealMessage = messages.some((m) => m.role === 'user');
+    let nextSessions = sessions;
+    if (hasRealMessage) {
+      const finished: ChatSession = { id: String(Date.now()), startedAt: Date.now(), messages };
+      nextSessions = [finished, ...sessions].slice(0, MAX_SESSIONS);
+      setSessions(nextSessions);
+      saveJSON(STORAGE_SESSIONS, nextSessions);
+    }
+    const fresh = [{ role: 'bot' as const, text: WELCOME }];
+    setMessages(fresh);
+    saveJSON(STORAGE_CURRENT, fresh);
+    setViewingId(null);
+    setShowHistory(false);
+  };
+
+  const openSession = (id: string) => {
+    setViewingId(id);
+    setShowHistory(false);
+  };
+
+  const backToLiveChat = () => {
+    setViewingId(null);
+  };
+
+  const clearHistory = () => {
+    setSessions([]);
+    saveJSON(STORAGE_SESSIONS, []);
+    setViewingId(null);
+  };
+
+  const viewingSession = viewingId ? sessions.find((s) => s.id === viewingId) ?? null : null;
+  const shownMessages = viewingSession ? viewingSession.messages : messages;
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {open && (
         <div className="mb-3 flex h-[32rem] max-h-[70vh] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center justify-between bg-green-700 px-4 py-3 text-white">
+          <div className="flex items-center justify-between gap-2 bg-green-700 px-3 py-2 text-white">
             <span className="text-sm font-semibold">CleanTrace Assistant</span>
-            <button
-              onClick={() => setOpen(false)}
-              className="text-xl leading-none hover:opacity-75"
-              aria-label="Close assistant"
-            >
-              &times;
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={startNewChat}
+                className="rounded px-2 py-1 text-xs font-medium hover:bg-green-800"
+                title="Start a new chat"
+              >
+                New chat
+              </button>
+              <button
+                onClick={() => setShowHistory((v) => !v)}
+                className="rounded px-2 py-1 text-xs font-medium hover:bg-green-800"
+                title="View past chats"
+              >
+                History{sessions.length > 0 ? ` (${sessions.length})` : ''}
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-xl leading-none hover:opacity-75"
+                aria-label="Close assistant"
+              >
+                &times;
+              </button>
+            </div>
           </div>
 
+          {showHistory && (
+            <div className="max-h-40 overflow-y-auto border-b border-gray-200 bg-gray-50 p-2 dark:border-gray-800 dark:bg-gray-800/60">
+              {sessions.length === 0 ? (
+                <p className="p-2 text-xs text-gray-500 dark:text-gray-400">
+                  No past chats saved yet on this device.
+                </p>
+              ) : (
+                <>
+                  {sessions.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => openSession(s.id)}
+                      className="block w-full rounded px-2 py-1.5 text-left text-xs hover:bg-gray-200 dark:hover:bg-gray-700"
+                    >
+                      <span className="block font-medium text-gray-700 dark:text-gray-200">
+                        {formatSessionTime(s.startedAt)}
+                      </span>
+                      <span className="block truncate text-gray-500 dark:text-gray-400">
+                        {sessionPreview(s)}
+                      </span>
+                    </button>
+                  ))}
+                  <button
+                    onClick={clearHistory}
+                    className="mt-1 w-full rounded px-2 py-1 text-left text-xs text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700"
+                  >
+                    Clear all history
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {viewingSession && (
+            <div className="flex items-center justify-between border-b border-yellow-200 bg-yellow-50 px-3 py-1.5 text-xs text-yellow-800 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-300">
+              <span>Viewing chat from {formatSessionTime(viewingSession.startedAt)}</span>
+              <button onClick={backToLiveChat} className="font-medium underline">
+                Back to live chat
+              </button>
+            </div>
+          )}
+
           <div className="flex-1 space-y-2 overflow-y-auto p-3">
-            {messages.map((m, i) => (
+            {shownMessages.map((m, i) => (
               <div
                 key={i}
                 className={`max-w-[88%] whitespace-pre-line break-words rounded-lg px-3 py-2 text-sm ${
@@ -500,7 +643,7 @@ export default function ChatWidget() {
                 {m.text}
               </div>
             ))}
-            {messages.length === 1 && (
+            {!viewingSession && shownMessages.length === 1 && (
               <div className="flex flex-wrap gap-2 pt-1">
                 {SUGGESTIONS.map((s) => (
                   <button
@@ -524,12 +667,14 @@ export default function ChatWidget() {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask a question..."
-              className="flex-1 rounded border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              placeholder={viewingSession ? 'Return to live chat to send a message' : 'Ask a question...'}
+              disabled={!!viewingSession}
+              className="flex-1 rounded border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
             />
             <button
               type="submit"
-              className="rounded bg-green-700 px-3 py-1 text-sm text-white hover:bg-green-800"
+              disabled={!!viewingSession}
+              className="rounded bg-green-700 px-3 py-1 text-sm text-white hover:bg-green-800 disabled:opacity-50"
             >
               Send
             </button>
