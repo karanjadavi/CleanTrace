@@ -554,6 +554,13 @@ export default function ChatWidget() {
     setViewingId(null);
   };
 
+  const deleteSession = (id: string) => {
+    const next = sessions.filter((s) => s.id !== id);
+    setSessions(next);
+    saveJSON(STORAGE_SESSIONS, next);
+    if (viewingId === id) setViewingId(null);
+  };
+
   const viewingSession = viewingId ? sessions.find((s) => s.id === viewingId) ?? null : null;
   const shownMessages = viewingSession ? viewingSession.messages : messages;
 
@@ -597,18 +604,30 @@ export default function ChatWidget() {
               ) : (
                 <>
                   {sessions.map((s) => (
-                    <button
+                    <div
                       key={s.id}
-                      onClick={() => openSession(s.id)}
-                      className="block w-full rounded px-2 py-1.5 text-left text-xs hover:bg-gray-200 dark:hover:bg-gray-700"
+                      className="flex items-center gap-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                     >
-                      <span className="block font-medium text-gray-700 dark:text-gray-200">
-                        {formatSessionTime(s.startedAt)}
-                      </span>
-                      <span className="block truncate text-gray-500 dark:text-gray-400">
-                        {sessionPreview(s)}
-                      </span>
-                    </button>
+                      <button
+                        onClick={() => openSession(s.id)}
+                        className="block min-w-0 flex-1 px-2 py-1.5 text-left text-xs"
+                      >
+                        <span className="block font-medium text-gray-700 dark:text-gray-200">
+                          {formatSessionTime(s.startedAt)}
+                        </span>
+                        <span className="block truncate text-gray-500 dark:text-gray-400">
+                          {sessionPreview(s)}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => deleteSession(s.id)}
+                        className="shrink-0 px-2 py-1.5 text-xs text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                        title="Delete this chat"
+                        aria-label="Delete this chat"
+                      >
+                        &times;
+                      </button>
+                    </div>
                   ))}
                   <button
                     onClick={clearHistory}
@@ -692,3 +711,4 @@ export default function ChatWidget() {
     </div>
   );
 }
+
