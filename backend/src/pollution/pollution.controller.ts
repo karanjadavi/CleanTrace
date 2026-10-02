@@ -1,10 +1,16 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { PollutionService } from './pollution.service.js';
 
 class SubmitReadingDto {
   location: string;
   pm25: number;
   source: string;
+}
+
+class SubmitReportDto {
+  location: string;
+  category: string;
+  description: string;
 }
 
 @Controller('pollution')
@@ -27,6 +33,15 @@ export class PollutionController {
       dto.location,
       dto.pm25,
       dto.source,
+    );
+  }
+
+  @Post('reports')
+  async submitReport(@Body() dto: SubmitReportDto) {
+    return this.pollutionService.submitCitizenReport(
+      dto.location,
+      dto.category,
+      dto.description,
     );
   }
 

@@ -12,6 +12,7 @@ import {
   scValToNative,
 } from '@stellar/stellar-sdk';
 import axios from 'axios';
+import { createHash } from 'crypto';
 
 const RPC_URL = 'https://soroban-testnet.stellar.org';
 const NETWORK_PASSPHRASE = Networks.TESTNET;
@@ -64,7 +65,7 @@ export class PollutionService {
       networkPassphrase: NETWORK_PASSPHRASE,
     })
       .addOperation(this.contract.call(fnName, ...args))
-      .setTimeout(100)
+      .setTimeout(300)
       .build();
 
     const prepared = await this.server.prepareTransaction(tx);
@@ -83,7 +84,7 @@ export class PollutionService {
       networkPassphrase: NETWORK_PASSPHRASE,
     })
       .addOperation(this.contract.call(fnName, ...args))
-      .setTimeout(100)
+      .setTimeout(300)
       .build();
 
     const sim = await this.server.simulateTransaction(tx);
@@ -98,6 +99,19 @@ export class PollutionService {
       nativeToScVal(location, { type: 'string' }),
       nativeToScVal(pm25, { type: 'u32' }),
       nativeToScVal(source, { type: 'string' }),
+    ]);
+  }
+
+  async submitCitizenReport(location: string, category: string, description: string) {
+    const keypair = Keypair.fromSecret(this.deployerSecret);
+    const reporterAddress = keypair.publicKey();
+    const hashBuffer = createHash('sha256').update(description || location).digest();
+
+    return this.submitTx('submit_citizen_report', [
+      nativeToScVal(reporterAddress, { type: 'address' }),
+      nativeToScVal(location, { type: 'string' }),
+      nativeToScVal(hashBuffer, { type: 'bytes' }),
+      nativeToScVal(category, { type: 'string' }),
     ]);
   }
 
